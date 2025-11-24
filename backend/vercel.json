@@ -1,4 +1,5 @@
 {
+  "installCommand": "npm install --legacy-peer-deps",
   "version": 2,
   "name": "backend",
   "builds": [{ "src": "src/index.ts", "use": "@vercel/node" }],
