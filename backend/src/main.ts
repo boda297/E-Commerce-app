@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 
-async function bootstrap() {
+async function createApp() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
@@ -30,28 +30,35 @@ async function bootstrap() {
     }),
   );
 
-  await app.init();
   return app;
 }
 
-// Cache the app instance
-let cachedApp;
+// Local development
+async function bootstrap() {
+  const app = await createApp();
+  await app.listen(process.env.PORT ?? 3000);
+  console.log(
+    `Application is running on: http://localhost:${process.env.PORT ?? 3000}`,
+  );
+}
 
 // Export for Vercel serverless
-export default async (req, res) => {
+let cachedApp: any;
+
+export default async (req: any, res: any) => {
   if (!cachedApp) {
-    cachedApp = await bootstrap();
+    cachedApp = await createApp();
+    await cachedApp.init();
   }
 
   const instance = cachedApp.getHttpAdapter().getInstance();
   return instance(req, res);
 };
 
-// Local development
+// Run bootstrap for local development
 if (require.main === module) {
-  bootstrap().then((app) => {
-    const port = process.env.PORT ?? 3000;
-    app.listen(port);
-    console.log(`Application is running on: http://localhost:${port}`);
+  bootstrap().catch((err) => {
+    console.error('Failed to start application:', err);
+    process.exit(1);
   });
 }
