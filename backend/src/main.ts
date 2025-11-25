@@ -18,16 +18,40 @@ async function bootstrap() {
       'X-HTTP-Method-Override',
     ],
   });
+
   app.useGlobalPipes(
     new ValidationPipe({
-      transform: true, // ← This converts types automatically
+      transform: true,
       transformOptions: {
-        enableImplicitConversion: true, // ← This is the key setting
+        enableImplicitConversion: true,
       },
       whitelist: true,
       forbidNonWhitelisted: false,
     }),
   );
-  await app.listen(process.env.PORT ?? 3000);
+
+  await app.init();
+  return app;
 }
-bootstrap();
+
+// Cache the app instance
+let cachedApp;
+
+// Export for Vercel serverless
+export default async (req, res) => {
+  if (!cachedApp) {
+    cachedApp = await bootstrap();
+  }
+
+  const instance = cachedApp.getHttpAdapter().getInstance();
+  return instance(req, res);
+};
+
+// Local development
+if (require.main === module) {
+  bootstrap().then((app) => {
+    const port = process.env.PORT ?? 3000;
+    app.listen(port);
+    console.log(`Application is running on: http://localhost:${port}`);
+  });
+}
